@@ -11,6 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 import joblib
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 # so we can import from src/
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -82,6 +83,60 @@ def prep_transform(preprocessor, X):
     return preprocessor.transform(X[avail])
 
 
+def _to_binary_target(y):
+    """Normalize churn labels to 0/1 for metric computation."""
+    y_series = pd.Series(y)
+    if y_series.dtype == object:
+        y_series = y_series.replace({"Yes": 1, "No": 0, "Churn": 1, "Stay": 0})
+    return y_series.astype(int).values
+
+
+def resolve_metrics(meta, model, preprocessor, X_test, y_test, threshold):
+    """Build dashboard metrics from meta and fall back to live computation when needed."""
+    metrics = {}
+
+    # Preferred schema
+    if isinstance(meta.get("metrics"), dict):
+        metrics.update(meta.get("metrics"))
+
+    # Backward-compatible schema from earlier notebooks
+    alias_map = {
+        "f1": "tuned_f1_test",
+        "roc_auc": "tuned_roc_auc_test",
+        "precision": "tuned_precision_test",
+        "recall": "tuned_recall_test",
+        "accuracy": "tuned_accuracy_test",
+    }
+    for key, alias in alias_map.items():
+        if key not in metrics and alias in meta:
+            metrics[key] = meta[alias]
+
+    required = ["f1", "roc_auc", "precision", "recall"]
+    if all(k in metrics for k in required):
+        return metrics
+
+    # Final fallback: compute from model + test set
+    if model is None or preprocessor is None or X_test is None or y_test is None:
+        return metrics
+
+    try:
+        X_test_proc = prep_transform(preprocessor, X_test)
+        y_true = _to_binary_target(y_test)
+        y_prob = model.predict_proba(X_test_proc)[:, 1]
+        y_pred = (y_prob >= threshold).astype(int)
+
+        metrics.setdefault("f1", f1_score(y_true, y_pred))
+        metrics.setdefault("roc_auc", roc_auc_score(y_true, y_prob))
+        metrics.setdefault("precision", precision_score(y_true, y_pred, zero_division=0))
+        metrics.setdefault("recall", recall_score(y_true, y_pred, zero_division=0))
+        metrics.setdefault("accuracy", accuracy_score(y_true, y_pred))
+    except Exception:
+        # Keep whatever metrics were available instead of failing the dashboard.
+        pass
+
+    return metrics
+
+
 # -------------------------------------------------------------------
 # page config
 # -------------------------------------------------------------------
@@ -96,9 +151,9 @@ preprocessor = load_preprocessor()
 meta         = load_meta()
 threshold    = meta.get("optimal_threshold", 0.5)
 model_name   = meta.get("model_name", "Best Model")
-metrics      = meta.get("metrics", {})
 
 X_test, y_test = load_test_data()
+metrics = resolve_metrics(meta, model, preprocessor, X_test, y_test, threshold)
 
 # -------------------------------------------------------------------
 # sidebar navigation
