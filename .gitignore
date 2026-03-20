@@ -19,8 +19,7 @@ __pycache__/
 *.ipynb_checkpoints
 
 # Model binaries — tracked via .gitkeep, not actual files
-models/**/*.joblib
-models/**/*.pkl
+
 !models/.gitkeep
 !models/baseline_models/.gitkeep
 !models/tuned_models/.gitkeep
