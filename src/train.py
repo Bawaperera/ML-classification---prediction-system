@@ -1,11 +1,5 @@
 """
-ML Classification & Prediction System
-Model Training Pipeline — trains and compares 6 classification models.
-
-Design notes:
-- We use class_weight='balanced' by default (simpler than SMOTE, often equally effective).
-- XGBoost uses scale_pos_weight to handle imbalance natively.
-- All results are stored in the ModelTrainer instance for easy comparison.
+Model training pipeline — trains and compares 6 classification models.
 """
 
 import os
@@ -28,39 +22,34 @@ try:
     XGBOOST_AVAILABLE = True
 except ImportError:
     XGBOOST_AVAILABLE = False
-    print("⚠️  XGBoost not found. XGBoost model will be skipped.")
+    print("XGBoost not found — XGBoost model will be skipped.")
 
 
 class ModelTrainer:
     """
-    Trains multiple classifiers and stores results for comparison.
+    Trains multiple classifiers and keeps the results for comparison.
 
-    Usage
-    -----
-    trainer = ModelTrainer(X_train, y_train, X_test, y_test)
-    comparison_df = trainer.train_all()
-    trainer.save_models()
+    Usage:
+        trainer = ModelTrainer(X_train, y_train, X_test, y_test)
+        comparison_df = trainer.train_all()
+        trainer.save_models()
     """
 
     def __init__(self, X_train, y_train, X_test, y_test, feature_names=None):
-        self.X_train = X_train
-        self.y_train = y_train
-        self.X_test  = X_test
-        self.y_test  = y_test
+        self.X_train       = X_train
+        self.y_train       = y_train
+        self.X_test        = X_test
+        self.y_test        = y_test
         self.feature_names = feature_names
-        self.models   = {}
-        self.results  = {}
+        self.models        = {}
+        self.results       = {}
         self.training_times = {}
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # Core training loop
-    # ─────────────────────────────────────────────────────────────────────────
-
     def _train_and_evaluate(self, name: str, model):
-        """Train one model, compute metrics, store everything."""
-        print(f"\n{'='*55}")
+        """Train one model and compute all evaluation metrics."""
+        print(f"\n{'='*50}")
         print(f"  {name}")
-        print(f"{'='*55}")
+        print(f"{'='*50}")
 
         start = time.time()
         model.fit(self.X_train, self.y_train)
@@ -81,30 +70,22 @@ class ModelTrainer:
             "train_time_seconds": round(train_time, 2),
         }
 
-        self.models[name]        = model
-        self.results[name]       = metrics
+        self.models[name]         = model
+        self.results[name]        = metrics
         self.training_times[name] = train_time
 
         print(f"  Accuracy  : {metrics['accuracy']:.4f}")
         print(f"  Precision : {metrics['precision']:.4f}")
         print(f"  Recall    : {metrics['recall']:.4f}")
-        print(f"  F1 Score  : {metrics['f1']:.4f}")
+        print(f"  F1        : {metrics['f1']:.4f}")
         if metrics["roc_auc"]:
             print(f"  ROC-AUC   : {metrics['roc_auc']:.4f}")
-        print(f"  Train Time: {train_time:.2f}s")
+        print(f"  Time      : {train_time:.2f}s")
 
         return model
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # Individual model trainers
-    # ─────────────────────────────────────────────────────────────────────────
-
     def train_logistic_regression(self):
-        """
-        Logistic Regression — the baseline.
-        If LR performs well, it means the features are linearly separable and
-        well-engineered. Great model for understanding the problem.
-        """
+        """Logistic Regression — simplest baseline. Good starting point."""
         model = LogisticRegression(
             class_weight="balanced",
             max_iter=1000,
@@ -115,10 +96,7 @@ class ModelTrainer:
         return self._train_and_evaluate("Logistic Regression", model)
 
     def train_decision_tree(self):
-        """
-        Decision Tree — interpretable but prone to overfitting.
-        Useful for understanding decision boundaries, not for production.
-        """
+        """Decision Tree — interpretable but prone to overfitting."""
         model = DecisionTreeClassifier(
             class_weight="balanced",
             max_depth=10,
@@ -128,10 +106,7 @@ class ModelTrainer:
         return self._train_and_evaluate("Decision Tree", model)
 
     def train_random_forest(self):
-        """
-        Random Forest — ensemble of trees, reduces variance via bagging.
-        Usually a strong, robust baseline.
-        """
+        """Random Forest — ensemble of trees. Usually a strong baseline."""
         model = RandomForestClassifier(
             n_estimators=200,
             class_weight="balanced",
@@ -143,10 +118,7 @@ class ModelTrainer:
         return self._train_and_evaluate("Random Forest", model)
 
     def train_gradient_boosting(self):
-        """
-        Gradient Boosting — sequential error correction.
-        Each tree learns from the residual errors of the previous.
-        """
+        """Gradient Boosting — each tree corrects the errors of the previous one."""
         model = GradientBoostingClassifier(
             n_estimators=200,
             max_depth=5,
@@ -158,11 +130,11 @@ class ModelTrainer:
 
     def train_xgboost(self):
         """
-        XGBoost — industry standard for tabular data.
-        Uses scale_pos_weight to handle class imbalance natively.
+        XGBoost — strong regularisation, handles tabular data well.
+        Uses scale_pos_weight to deal with class imbalance.
         """
         if not XGBOOST_AVAILABLE:
-            print("  ⚠️  Skipping XGBoost (not installed).")
+            print("  Skipping XGBoost (not installed).")
             return None
 
         neg_count = (self.y_train == 0).sum()
@@ -184,9 +156,9 @@ class ModelTrainer:
 
     def train_svm(self):
         """
-        SVM with RBF kernel — strong with clear margins.
-        probability=True is required for predict_proba (and ROC-AUC).
-        Note: Slow on large datasets.
+        SVM with RBF kernel.
+        probability=True is needed for predict_proba and ROC-AUC.
+        Slower than the tree models on this size of dataset.
         """
         model = SVC(
             class_weight="balanced",
@@ -197,15 +169,11 @@ class ModelTrainer:
         )
         return self._train_and_evaluate("SVM", model)
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # Batch training & results
-    # ─────────────────────────────────────────────────────────────────────────
-
     def train_all(self) -> pd.DataFrame:
-        """Train all 6 models and return a comparison DataFrame sorted by F1."""
-        print("\n" + "="*55)
+        """Train all 6 models in sequence and return a comparison DataFrame."""
+        print("\n" + "="*50)
         print("  TRAINING ALL 6 MODELS")
-        print("="*55)
+        print("="*50)
 
         self.train_logistic_regression()
         self.train_decision_tree()
@@ -217,14 +185,12 @@ class ModelTrainer:
         return self.get_comparison_df()
 
     def get_comparison_df(self) -> pd.DataFrame:
-        """Return a DataFrame comparing all trained models, sorted by F1."""
+        """Returns a DataFrame with all model results sorted by F1 score."""
         df = pd.DataFrame(self.results).T
-        df = df.sort_values("f1", ascending=False)
-        df = df.round(4)
-        return df
+        return df.sort_values("f1", ascending=False).round(4)
 
     def save_models(self, directory: str = "models/baseline_models"):
-        """Persist all trained models to disk."""
+        """Save all trained models to disk."""
         os.makedirs(directory, exist_ok=True)
         for name, model in self.models.items():
             safe_name = name.lower().replace(" ", "_")
@@ -233,19 +199,16 @@ class ModelTrainer:
             print(f"  Saved: {path}")
 
     def get_top_n_models(self, n: int = 2, metric: str = "f1") -> list:
-        """Return the names of the top N models by the given metric."""
-        comparison = self.get_comparison_df()
-        return comparison.head(n).index.tolist()
+        """Returns names of the top N models sorted by the given metric."""
+        return self.get_comparison_df().head(n).index.tolist()
 
     def print_classification_reports(self, top_n: int = 3):
-        """Print full sklearn classification_report for top N models."""
-        top_names = self.get_top_n_models(n=top_n)
-        for name in top_names:
-            model = self.models[name]
-            y_pred = model.predict(self.X_test)
-            print(f"\n{'─'*55}")
-            print(f"  {name} — Classification Report")
-            print(f"{'─'*55}")
+        """Prints sklearn classification_report for the top N models."""
+        for name in self.get_top_n_models(n=top_n):
+            y_pred = self.models[name].predict(self.X_test)
+            print(f"\n{'─'*50}")
+            print(f"  {name}")
+            print(f"{'─'*50}")
             print(classification_report(
                 self.y_test, y_pred,
                 target_names=["No Churn", "Churn"],
