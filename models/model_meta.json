@@ -1,8 +1,0 @@
-{
-  "model_name": "Random Forest",
-  "optimal_threshold": 0.42,
-  "tuned_f1_test": 0.637,
-  "tuned_roc_auc_test": 0.8413,
-  "cv_f1_mean": 0.6366,
-  "cv_f1_std": 0.0234
-}
