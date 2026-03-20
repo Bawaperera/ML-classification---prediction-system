@@ -18,11 +18,9 @@ __pycache__/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Model binaries — keep the production artefacts, ignore the rest
-models/baseline_models/*.joblib
-models/baseline_models/*.pkl
-models/tuned_models/*.joblib
-models/tuned_models/*.pkl
+# Model binaries — tracked via .gitkeep, not actual files
+models/**/*.joblib
+models/**/*.pkl
 !models/.gitkeep
 !models/baseline_models/.gitkeep
 !models/tuned_models/.gitkeep
