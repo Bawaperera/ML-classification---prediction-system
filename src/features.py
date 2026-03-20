@@ -115,9 +115,9 @@ def get_feature_names(
         .named_transformers_["cat"]["encoder"]
         .get_feature_names_out(categorical_cols)
     )
-    remainder_cols = [
-        preprocessor.feature_names_in_[i]
-        for i in preprocessor.transformers_[-1][2]
-    ] if preprocessor.transformers_[-1][0] == "remainder" else []
+    # the remainder transformer passes columns through unchanged — its [2] slot is
+    # already a list of column names, not integer indices
+    last = preprocessor.transformers_[-1]
+    remainder_cols = list(last[2]) if last[0] == "remainder" else []
 
     return list(numerical_cols) + list(cat_features) + remainder_cols

@@ -28,6 +28,11 @@ def compute_shap_values(model, X, sample_size=None):
     explainer   = shap.TreeExplainer(model)
     shap_values = explainer(X_sample)
 
+    # Binary classifiers (RF, GBM) return 3D shape (samples, features, classes).
+    # Slice to positive class (Churn=1) so all plots receive a 2D Explanation.
+    if len(shap_values.shape) == 3:
+        shap_values = shap_values[:, :, 1]
+
     return explainer, shap_values, X_sample
 
 
@@ -39,6 +44,9 @@ def plot_beeswarm(shap_values, max_display=20, save_path=None):
     Colour = feature value (red = high, blue = low).
     Features are sorted by mean absolute SHAP value (most impactful at top).
     """
+    # Binary classifiers return 3D (samples, features, classes) — slice to positive class
+    if len(shap_values.shape) == 3:
+        shap_values = shap_values[:, :, 1]
     plt.figure(figsize=(10, max_display * 0.4 + 2))
     shap.plots.beeswarm(shap_values, max_display=max_display, show=False)
     plt.tight_layout()
