@@ -1,7 +1,7 @@
 # ML Classification & Prediction System
-## Telco Customer Churn Prediction with Explainable AI
+## Telco Customer Churn Prediction
 
-A complete end-to-end machine learning project that predicts which telecom customers are likely to cancel their subscription. The project covers data cleaning, feature engineering, model comparison, hyperparameter tuning, threshold optimisation, SHAP explainability, and a Streamlit dashboard.
+A complete end-to-end machine learning project that predicts which telecom customers are likely to cancel their subscription. The project covers data cleaning, feature engineering, model comparison, hyperparameter tuning, threshold optimisation, and a Streamlit dashboard.
 
 ---
 
@@ -24,14 +24,12 @@ ML classification & prediction system/
 │   ├── 03_model_training.ipynb
 │   ├── 04_hyperparameter_tuning.ipynb
 │   ├── 05_evaluation_deep_dive.ipynb
-│   └── 06_explainability_shap.ipynb
 ├── src/
 │   ├── __init__.py
 │   ├── preprocessing.py       # load, clean, split
 │   ├── features.py            # feature engineering + sklearn pipeline
 │   ├── train.py               # ModelTrainer class (6 models)
-│   ├── evaluate.py            # plotting utilities for evaluation
-│   └── explain.py             # SHAP functions
+│   └── evaluate.py            # plotting utilities for evaluation
 ├── dashboard/
 │   └── app.py                 # 4-page Streamlit app
 ├── reports/
@@ -59,7 +57,7 @@ pip install -r requirements.txt
 
 ### 2. Run the notebooks in order
 
-Open Jupyter and run the notebooks from 01 to 06. Each notebook saves its outputs (processed data, trained models) so the next one can pick up where the last left off.
+Open Jupyter and run the notebooks from 01 to 05. Each notebook saves its outputs (processed data, trained models) so the next one can pick up where the last left off.
 
 ```bash
 jupyter notebook
@@ -72,7 +70,6 @@ jupyter notebook
 | 03 | Train 6 models, compare with a table and charts |
 | 04 | Tune the top 2 models with RandomizedSearchCV, pick best |
 | 05 | Deep evaluation — confusion matrix, ROC/PR, learning curves, error analysis |
-| 06 | SHAP explainability — global and individual explanations, business recommendations |
 
 ### 3. Launch the dashboard
 
@@ -85,7 +82,7 @@ streamlit run app.py
 
 The dashboard has 4 pages:
 - **Overview** — metric cards, feature importance, churn distribution
-- **Individual Prediction** — fill in customer details, get probability + SHAP waterfall
+- **Individual Prediction** — fill in customer details, get churn probability
 - **Batch Prediction** — upload a CSV, download predictions
 - **Model Performance** — confusion matrix, ROC/PR curves, threshold analysis
 
@@ -98,7 +95,7 @@ The dashboard has 4 pages:
 - F1 Score: **~0.65** (at optimal threshold)
 - Optimal threshold: **below 0.50** — catches more churners at the cost of more false alarms, which makes business sense (retention outreach is cheaper than losing a customer)
 
-Top churn drivers (from SHAP):
+Top churn drivers:
 - Month-to-month contract
 - Low tenure (new customers)
 - High monthly charges
@@ -109,7 +106,7 @@ Top churn drivers (from SHAP):
 
 ## Tech Stack
 
-Python · pandas · scikit-learn · XGBoost · imbalanced-learn (SMOTE) · SHAP · Streamlit · matplotlib · seaborn
+Python · pandas · scikit-learn · XGBoost · imbalanced-learn (SMOTE) · Streamlit · matplotlib · seaborn
 
 ---
 
@@ -118,5 +115,4 @@ Python · pandas · scikit-learn · XGBoost · imbalanced-learn (SMOTE) · SHAP 
 - Why accuracy is a bad metric for imbalanced datasets and why F1 + ROC-AUC are better
 - How to prevent data leakage by fitting the preprocessing pipeline on training data only
 - How SMOTE works and why it should never touch the test set
-- How to use SHAP values to explain individual predictions (not just global importance)
 - How threshold tuning can improve real-world usefulness of a model

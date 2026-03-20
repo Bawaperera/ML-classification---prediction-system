@@ -51,9 +51,9 @@ Evaluated on the held-out test set (no SMOTE applied to test data).
 
 Exact numbers depend on the random seed and hyperparameter search results in your run.
 
-## Key Features (SHAP)
+## Key Features
 
-Top drivers of churn predictions ranked by mean absolute SHAP value:
+Top drivers of churn predictions from model analysis:
 
 1. Contract type (Month-to-month contracts strongly predict churn)
 2. Tenure (newer customers churn more)

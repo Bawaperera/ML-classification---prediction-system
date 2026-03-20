@@ -11,7 +11,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
 import joblib
-import shap
 
 # so we can import from src/
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -190,7 +189,7 @@ elif page == "Individual Prediction":
     st.title("Individual Customer Prediction")
     st.markdown(
         "Fill in the customer details below. The model will predict churn probability "
-        "and explain which features drove that prediction."
+        "for the selected customer."
     )
     st.markdown("---")
 
@@ -291,21 +290,21 @@ elif page == "Individual Prediction":
             st.progress(float(prob))
 
         with res_col2:
-            st.subheader("SHAP Explanation")
-            try:
-                explainer   = shap.TreeExplainer(model)
-                shap_vals   = explainer(X_proc)
-                num_cols    = preprocessor.transformers_[0][2]
-                cat_cols    = preprocessor.transformers_[1][2]
-                feat_names  = get_feature_names(preprocessor, num_cols, cat_cols)
-
-                fig, ax = plt.subplots(figsize=(8, 5))
-                shap.plots.waterfall(shap_vals[0], max_display=12, show=False)
-                plt.tight_layout()
-                st.pyplot(plt.gcf())
-                plt.close("all")
-            except Exception as e:
-                st.warning(f"SHAP plot could not be generated: {e}")
+            st.subheader("Risk Guidance")
+            if prob >= 0.6:
+                st.warning(
+                    "High churn risk. Prioritise this customer for retention outreach, "
+                    "plan review, and support follow-up."
+                )
+            elif prob >= 0.3:
+                st.info(
+                    "Medium churn risk. Consider proactive engagement and offer review "
+                    "to reduce churn likelihood."
+                )
+            else:
+                st.success(
+                    "Low churn risk. Continue standard engagement and monitor for changes."
+                )
 
 
 # ===================================================================
